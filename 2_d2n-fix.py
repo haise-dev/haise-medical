@@ -11,7 +11,7 @@ tokenizer = T5Tokenizer.from_pretrained(model_name)
 model = T5ForConditionalGeneration.from_pretrained(model_name)
 
 # Define a preprocessing function
-def preprocess_function(examples, include_output=False):
+def preprocess_function(examples):
     inputs = examples["inputs"]
     targets = examples["target"]
 
@@ -30,14 +30,6 @@ def preprocess_function(examples, include_output=False):
     ]
     model_inputs["labels"] = labels
 
-    # Optionally include 'output' for specific splits
-    if include_output and "output" in examples:
-        outputs = examples["output"]
-        output_ids = tokenizer(
-            outputs, max_length=1024, truncation=True, padding="max_length"
-        ).input_ids
-        model_inputs["output_ids"] = output_ids  # Keep outputs for downstream use
-
     # Keep idx for alignment
     if "idx" in examples:
         model_inputs["idx"] = examples["idx"]
@@ -52,21 +44,19 @@ dataset = load_dataset("json", data_files={
 })
 
 # Preprocess the dataset
-def preprocess_dataset(split, include_output=False):
+def preprocess_dataset(split):
     columns_to_keep = ["idx", "inputs", "target"]
-    if include_output:
-        columns_to_keep.append("output")
     return dataset[split].map(
-        lambda x: preprocess_function(x, include_output),
+        preprocess_function,
         batched=True,
         remove_columns=[col for col in dataset[split].column_names if col not in columns_to_keep]
     )
 
-# Tokenize datasets, ensuring that 'output' is ignored for result.jsonl
+# Tokenize datasets
 tokenized_datasets = {
-    "train": preprocess_dataset("train", include_output=True),
-    "test": preprocess_dataset("test", include_output=False),
-    "result": preprocess_dataset("result", include_output=False),  # Exclude 'output'
+    "train": preprocess_dataset("train"),
+    "test": preprocess_dataset("test"),
+    "result": preprocess_dataset("result"),
 }
 
 # Define the training arguments

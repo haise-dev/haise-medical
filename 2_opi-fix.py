@@ -20,7 +20,7 @@ opi_dataset = load_dataset('json', data_files={
 })
 
 # Define tokenization function
-def tokenize_function(examples, is_train=False):
+def tokenize_function(examples):
     # Tokenize inputs and targets
     model_inputs = tokenizer(examples['inputs'], max_length=512, padding='max_length', truncation=True)
 
@@ -29,23 +29,15 @@ def tokenize_function(examples, is_train=False):
     
     model_inputs['labels'] = labels['input_ids']
 
-    # Handle the 'output' field only for training
-    if is_train and 'output' in examples:
-        outputs = examples['output']
-        output_ids = tokenizer(outputs, max_length=1024, padding='max_length', truncation=True)['input_ids']
-        model_inputs['output_ids'] = output_ids
-
     return model_inputs
 
 # Process datasets
 for split in ['train', 'test', 'validate', 'result']:
-    is_train = (split == 'train')  # Only process 'output' for train split
-    current_columns = columns_to_keep + (['output'] if is_train else [])  # Include 'output' only for train
     opi_dataset[split] = opi_dataset[split].map(
-        lambda x: tokenize_function(x, is_train=is_train),
+        tokenize_function,
         batched=True,
         num_proc=4,
-        remove_columns=[col for col in opi_dataset[split].column_names if col not in current_columns]
+        remove_columns=[col for col in opi_dataset[split].column_names if col not in columns_to_keep]
     )
 
 # Set format for PyTorch
