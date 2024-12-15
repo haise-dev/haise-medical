@@ -30,26 +30,21 @@ def preprocess_function(examples):
     ]
     model_inputs["labels"] = labels
 
-    # Keep idx for alignment
-    if "idx" in examples:
-        model_inputs["idx"] = examples["idx"]
-
     return model_inputs
 
 # Load the dataset
 dataset = load_dataset("json", data_files={
     "train": os.path.join(dataset_path, "train.jsonl"),
     "test": os.path.join(dataset_path, "test.jsonl"),
-    "result": os.path.join(dataset_path, "result.jsonl")
+    "result": os.path.join(dataset_path, "result.jsonl"),
 })
 
 # Preprocess the dataset
 def preprocess_dataset(split):
-    columns_to_keep = ["idx", "inputs", "target"]
     return dataset[split].map(
         preprocess_function,
         batched=True,
-        remove_columns=[col for col in dataset[split].column_names if col not in columns_to_keep]
+        remove_columns=["output"]  # Explicitly remove unwanted columns
     )
 
 # Tokenize datasets
@@ -63,20 +58,20 @@ tokenized_datasets = {
 training_args = TrainingArguments(
     output_dir="./T5_D2N_Model",
     evaluation_strategy="steps",
-    eval_steps=1,
-    save_steps=20,
+    eval_steps=500,  # Adjust based on dataset size
+    save_steps=500,  # Save less frequently to avoid overhead
     logging_steps=100,
-    per_device_train_batch_size=8,  # Optimized for RTX 3090
+    per_device_train_batch_size=8,  # Adjust based on GPU memory
     per_device_eval_batch_size=8,
-    gradient_accumulation_steps=4,  # Adjust for memory efficiency
+    gradient_accumulation_steps=4,
     num_train_epochs=10,
     learning_rate=3e-5,
     weight_decay=0.01,
     save_total_limit=2,
-    fp16=True,  # Mixed precision for faster training
+    fp16=True,  # Use mixed precision if supported
     load_best_model_at_end=True,
     report_to="none",
-    remove_unused_columns=False,  # Preserve alignment fields like idx
+    remove_unused_columns=True,  # Ensures compatibility with the Trainer
 )
 
 # Initialize the Trainer
