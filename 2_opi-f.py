@@ -7,8 +7,8 @@ from transformers import DataCollatorForSeq2Seq
 dataset_path = ""
 
 # Load the tokenizer and model
-tokenizer = T5Tokenizer.from_pretrained("t5-large")
-model = T5ForConditionalGeneration.from_pretrained("t5-large")
+tokenizer = T5Tokenizer.from_pretrained("t5-base")  # Using T5-base
+model = T5ForConditionalGeneration.from_pretrained("t5-base")
 
 # Load the dataset
 dataset = load_dataset("json", data_files={
@@ -41,13 +41,13 @@ training_args = TrainingArguments(
     output_dir="./T5_OPI_Model",         # Output directory for checkpoints and logs
     evaluation_strategy="steps",         # Evaluate at regular steps
     eval_steps=342,                      # Evaluate every ~10% of total steps (3420 / 10)
-    save_steps=342,                      # Save checkpoint every ~10% of total steps
+    save_steps=3762,                      # Save checkpoint every ~10% of total steps
     logging_steps=100,                   # Log training metrics every 100 steps
     per_device_train_batch_size=4,       # Batch size for training
     per_device_eval_batch_size=4,        # Batch size for evaluation
     gradient_accumulation_steps=8,       # Effective batch size = 4 * 8 = 32
     num_train_epochs=10,                 # Train for 10 epochs
-    learning_rate=1e-4,                  # Learning rate for T5-large
+    learning_rate=1e-4,                  # Learning rate for T5-base
     weight_decay=0.01,                   # Regularization to avoid overfitting
     save_total_limit=2,                  # Keep the last 2 checkpoints
     fp16=True,                           # Mixed precision for memory efficiency
